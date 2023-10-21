@@ -8,14 +8,20 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#property indicator_buffers 1
-#property indicator_plots 1
+#property indicator_buffers 2
+#property indicator_plots 2
 
 #property indicator_type1 DRAW_LINE 
 #property indicator_label1 "SlowMA"
 #property indicator_color1 clrGray 
 #property indicator_style1 STYLE_SOLID 
 #property indicator_width1 4
+
+#property indicator_type2 DRAW_LINE 
+#property indicator_label2 "FastMA"
+#property indicator_color2 clrBlue 
+#property indicator_style2 STYLE_SOLID 
+#property indicator_width2 4
 
 //--- input parameters
 input int InpSlowMAPeriod = 34; // Slow Period
@@ -44,15 +50,16 @@ int OnInit()
   {
 //--- indicator buffers mapping
    SetIndexBuffer(0, BufferSlow, INDICATOR_DATA);
+   SetIndexBuffer(1, BufferFast, INDICATOR_DATA);
    
    MaxPeriod = (int) MathMax(MathMax(InpSignalMAPeriod, InpFastMAPeriod), InpSlowMAPeriod);
-   
-   PlotIndexSetInteger(0, PLOT_DRAW_BEGIN, MaxPeriod);
 
    SlowHandle = iMA(Symbol(), Period(), InpSlowMAPeriod, 0, InpSlowMAMode, PRICE_CLOSE);
    FastHandle = iMA(Symbol(), Period(), InpFastMAPeriod, 0, InpFastMAMode, PRICE_CLOSE);
    SignalHandle = iMA(Symbol(), Period(), InpSignalMAPeriod, 0, InpSignalMAMode, PRICE_CLOSE);
    
+   PlotIndexSetInteger(0, PLOT_DRAW_BEGIN, MaxPeriod);
+   PlotIndexSetInteger(1, PLOT_DRAW_BEGIN, MaxPeriod);
 //---
    return(INIT_SUCCEEDED);
   }
@@ -99,6 +106,7 @@ int OnCalculate(const int rates_total,
    
    // copy the bars
    if (CopyBuffer(SlowHandle, 0, 0, copyBars, BufferSlow)<=0) return(0);
+   if (CopyBuffer(FastHandle, 0, 0, copyBars, BufferFast)<=0) return(0);
    
 //--- return value of prev_calculated for next call
    return(rates_total);
