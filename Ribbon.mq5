@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#property indicator_buffers 4
+#property indicator_buffers 5
 #property indicator_plots 3
 
 #property indicator_type1 DRAW_FILLING
@@ -59,6 +59,8 @@ int OnInit()
    SetIndexBuffer(1, BufferSlowChannel, INDICATOR_DATA);
    SetIndexBuffer(2, BufferSlow, INDICATOR_DATA);
    SetIndexBuffer(3, BufferFast, INDICATOR_DATA);
+
+   SetIndexBuffer(4, BufferSignal, INDICATOR_DATA);
    
    MaxPeriod = (int) MathMax(MathMax(InpSignalMAPeriod, InpFastMAPeriod), InpSlowMAPeriod);
 
@@ -104,13 +106,17 @@ int OnCalculate(const int rates_total,
    
    // copy just the bars that need to be copied
    int copyBars = 0;
+   int startBar = 0;
+
    if (prev_calculated>rates_total || prev_calculated<=0) {
       // first run through the loop
       copyBars = rates_total;
+      startBar = MaxPeriod;
    } else {
       // if new bar has appeared, rates_total will be 1 greater than prev_calculated
       copyBars = rates_total-prev_calculated;
       if (prev_calculated>0) copyBars++;
+      startBar = prev_calculated-1;
    }
    
    // copy the bars
@@ -118,6 +124,18 @@ int OnCalculate(const int rates_total,
    if (CopyBuffer(FastHandle, 0, 0, copyBars, BufferSlowChannel)<=0) return(0);
    if (CopyBuffer(SlowHandle, 0, 0, copyBars, BufferSlow)<=0) return(0);
    if (CopyBuffer(FastHandle, 0, 0, copyBars, BufferFast)<=0) return(0);
+   if (CopyBuffer(SignalHandle, 0, 0, copyBars, BufferSignal)<=0) return(0);
+
+   if (IsStopped()) return(0); // pre-loop exit check
+   for (int i=startBar; i<rates_total && !IsStopped(); i++) {
+      if ( (BufferFast[i]>=BufferSlow[i] && BufferSignal[i]<BufferFast[i]) 
+      || (BufferFast[i]<BufferSlow[i] && BufferSignal[i]>BufferFast[i])) {
+         BufferFast[i] = EMPTY_VALUE;
+         BufferSlow[i] = EMPTY_VALUE;
+         BufferFastChannel[i] = EMPTY_VALUE;
+         BufferSlowChannel[i] = EMPTY_VALUE;
+      }
+   }
    
 //--- return value of prev_calculated for next call
    return(rates_total);
