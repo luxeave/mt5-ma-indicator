@@ -8,20 +8,24 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#property indicator_buffers 2
-#property indicator_plots 2
+#property indicator_buffers 4
+#property indicator_plots 3
 
-#property indicator_type1 DRAW_LINE 
-#property indicator_label1 "SlowMA"
-#property indicator_color1 clrGray 
-#property indicator_style1 STYLE_SOLID 
-#property indicator_width1 4
+#property indicator_type1 DRAW_FILLING
+#property indicator_label1 "Channel FastMA;Channel SloweMA"
+#property indicator_color1 clrYellow, clrFireBrick
 
 #property indicator_type2 DRAW_LINE 
-#property indicator_label2 "FastMA"
-#property indicator_color2 clrBlue 
+#property indicator_label2 "SlowMA"
+#property indicator_color2 clrGray 
 #property indicator_style2 STYLE_SOLID 
 #property indicator_width2 4
+
+#property indicator_type3 DRAW_LINE 
+#property indicator_label3 "FastMA"
+#property indicator_color3 clrBlue 
+#property indicator_style3 STYLE_SOLID 
+#property indicator_width3 3
 
 //--- input parameters
 input int InpSlowMAPeriod = 34; // Slow Period
@@ -33,6 +37,8 @@ input ENUM_MA_METHOD InpFastMAMode = MODE_EMA; // Fast MA Mode
 input int InpSignalMAPeriod = 5; // Signal Period
 input ENUM_MA_METHOD InpSignalMAMode = MODE_EMA; // MA Mode
 
+double BufferFastChannel[];
+double BufferSlowChannel[];
 double BufferFast[];
 double BufferSlow[];
 double BufferSignal[];
@@ -48,9 +54,11 @@ int MaxPeriod;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-//--- indicator buffers mapping
-   SetIndexBuffer(0, BufferSlow, INDICATOR_DATA);
-   SetIndexBuffer(1, BufferFast, INDICATOR_DATA);
+   //--- indicator buffers mapping
+   SetIndexBuffer(0, BufferFastChannel, INDICATOR_DATA);
+   SetIndexBuffer(1, BufferSlowChannel, INDICATOR_DATA);
+   SetIndexBuffer(2, BufferSlow, INDICATOR_DATA);
+   SetIndexBuffer(3, BufferFast, INDICATOR_DATA);
    
    MaxPeriod = (int) MathMax(MathMax(InpSignalMAPeriod, InpFastMAPeriod), InpSlowMAPeriod);
 
@@ -60,6 +68,7 @@ int OnInit()
    
    PlotIndexSetInteger(0, PLOT_DRAW_BEGIN, MaxPeriod);
    PlotIndexSetInteger(1, PLOT_DRAW_BEGIN, MaxPeriod);
+   PlotIndexSetInteger(3, PLOT_DRAW_BEGIN, MaxPeriod);
 //---
    return(INIT_SUCCEEDED);
   }
@@ -105,6 +114,8 @@ int OnCalculate(const int rates_total,
    }
    
    // copy the bars
+   if (CopyBuffer(SlowHandle, 0, 0, copyBars, BufferFastChannel)<=0) return(0);
+   if (CopyBuffer(FastHandle, 0, 0, copyBars, BufferSlowChannel)<=0) return(0);
    if (CopyBuffer(SlowHandle, 0, 0, copyBars, BufferSlow)<=0) return(0);
    if (CopyBuffer(FastHandle, 0, 0, copyBars, BufferFast)<=0) return(0);
    
